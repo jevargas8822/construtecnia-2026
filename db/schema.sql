@@ -51,14 +51,28 @@ CREATE TABLE IF NOT EXISTS inscritos (
 
 CREATE INDEX IF NOT EXISTS idx_inscritos_correo ON inscritos(correo);
 
--- 4. CONTROL DE RATE LIMITING EN BASE DE DATOS
+-- 4. CONTROL DE RATE LIMITING EN BASE DE DATOS (SERVERLESS COMPATIBLE)
 CREATE TABLE IF NOT EXISTS rate_limits (
-    ip_hash VARCHAR(64) NOT NULL,
+    clave VARCHAR(128) NOT NULL,
     accion VARCHAR(32) NOT NULL,
     minuto_epoch BIGINT NOT NULL,
     contador INT NOT NULL DEFAULT 1,
-    PRIMARY KEY (ip_hash, accion, minuto_epoch)
+    PRIMARY KEY (clave, accion, minuto_epoch)
 );
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_minuto ON rate_limits(minuto_epoch);
+
+-- Migración automática si existía previamente con columna ip_hash
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'rate_limits' AND column_name = 'ip_hash'
+  ) THEN
+    ALTER TABLE rate_limits RENAME COLUMN ip_hash TO clave;
+    ALTER TABLE rate_limits ALTER COLUMN clave TYPE VARCHAR(128);
+  END IF;
+END $$;
 
 -- 5. CONTROL DE INTENTOS FALLIDOS DE LOGIN DEL STAFF
 CREATE TABLE IF NOT EXISTS admin_intentos_login (

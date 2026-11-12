@@ -1,3 +1,11 @@
+// Constantes con nombre para control de frecuencia (Rate Limiting)
+// Modificables desde un solo lugar para adaptarse al tráfico del evento (Wifi compartido / IP móvil)
+export const RATE_LIMIT_ASISTENCIA_POR_MINUTO = 1000;
+export const RATE_LIMIT_CONSULTA_ACTIVA_POR_MINUTO = 1000;
+export const RATE_LIMIT_ASISTENCIA_POR_CORREO_MINUTO = 5;
+export const RATE_LIMIT_ADMIN_LOGIN_INTENTOS = 5;
+export const RATE_LIMIT_ADMIN_LOGIN_BLOQUEO_MINUTOS = 10;
+
 export interface PonenciaConfig {
   orden: number;
   dia: number;
@@ -43,9 +51,11 @@ export const EVENT_CONFIG = {
 
   // Seguridad y Rate Limiting
   seguridad: {
-    maxAsistenciasPorMinutoPorIp: 10,
-    maxIntentosLoginStaff: 5,
-    minutosBloqueoLoginStaff: 10,
+    maxAsistenciasPorMinutoPorIp: RATE_LIMIT_ASISTENCIA_POR_MINUTO,
+    maxConsultasActivaPorMinutoPorIp: RATE_LIMIT_CONSULTA_ACTIVA_POR_MINUTO,
+    maxAsistenciasPorMinutoPorCorreo: RATE_LIMIT_ASISTENCIA_POR_CORREO_MINUTO,
+    maxIntentosLoginStaff: RATE_LIMIT_ADMIN_LOGIN_INTENTOS,
+    minutosBloqueoLoginStaff: RATE_LIMIT_ADMIN_LOGIN_BLOQUEO_MINUTOS,
   },
 
   // Las 8 ponencias oficiales del congreso (4 por día)

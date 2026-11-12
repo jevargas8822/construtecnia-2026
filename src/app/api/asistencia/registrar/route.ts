@@ -1,19 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, ensureDatabaseInitialized } from '@/lib/db';
 import { EVENT_CONFIG } from '@/config';
-import { getClientIp, hashIp, checkAttendanceRateLimit } from '@/lib/security';
+import {
+  getClientIp,
+  hashIp,
+  checkAttendanceIpRateLimit,
+  checkAttendanceEmailRateLimit,
+} from '@/lib/security';
 import { formatLimaDateTime } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Detección y Rate Limiting por IP
+    // 1. Detección y Rate Limiting por IP (1000 solicitudes por minuto por IP)
     const clientIp = getClientIp(req.headers);
     const ipHash = hashIp(clientIp);
 
-    const rateLimit = await checkAttendanceRateLimit(ipHash);
-    if (!rateLimit.allowed) {
+    const ipRateLimit = await checkAttendanceIpRateLimit(ipHash);
+    if (!ipRateLimit.allowed) {
       return NextResponse.json(
         {
           error:
@@ -61,6 +66,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: EVENT_CONFIG.validacion.correo.errorMensaje },
         { status: 400 }
+      );
+    }
+
+    // Límite adicional por correo electrónico (máx. 5 intentos por minuto por correo)
+    const emailRateLimit = await checkAttendanceEmailRateLimit(correoNormalizado);
+    if (!emailRateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            'Has intentado registrar demasiadas asistencias con este correo en poco tiempo. Por favor espera un minuto antes de reintentar.',
+        },
+        { status: 429 }
       );
     }
 

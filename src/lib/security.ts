@@ -29,25 +29,34 @@ export function hashIp(ip: string): string {
 }
 
 /**
- * Verifica y aplica el límite de frecuencia para el registro de asistencias por IP (máx 10 por minuto).
- * Utiliza PostgreSQL para garantizar consistencia entre múltiples instancias serverless de Vercel.
+ * Verifica y aplica el límite de frecuencia genérico en PostgreSQL (Serverless / Vercel).
+ * Utiliza INSERT ... ON CONFLICT DO UPDATE para ser 100% atómico y seguro ante concurrencia.
+ * Limpieza oportunista de registros con más de 60 minutos para optimizar almacenamiento.
  */
-export async function checkAttendanceRateLimit(
-  ipHash: string
+export async function checkRateLimit(
+  clave: string,
+  accion: string,
+  maxAllowed: number
 ): Promise<{ allowed: boolean; count: number; limit: number }> {
-  const maxAllowed = EVENT_CONFIG.seguridad.maxAsistenciasPorMinutoPorIp;
   const currentMinute = Math.floor(Date.now() / 60000);
+
+  // Limpieza oportunista en segundo plano (2% de las peticiones) de filas antiguas
+  if (Math.random() < 0.02) {
+    query(`DELETE FROM rate_limits WHERE minuto_epoch < $1;`, [currentMinute - 60]).catch((err) => {
+      console.warn('[RateLimit Cleanup Warning]', err);
+    });
+  }
 
   try {
     const res = await query<{ contador: number }>(
       `
-      INSERT INTO rate_limits (ip_hash, accion, minuto_epoch, contador)
-      VALUES ($1, 'asistencia', $2, 1)
-      ON CONFLICT (ip_hash, accion, minuto_epoch)
+      INSERT INTO rate_limits (clave, accion, minuto_epoch, contador)
+      VALUES ($1, $2, $3, 1)
+      ON CONFLICT (clave, accion, minuto_epoch)
       DO UPDATE SET contador = rate_limits.contador + 1
       RETURNING contador;
       `,
-      [ipHash, currentMinute]
+      [clave, accion, currentMinute]
     );
 
     const count = res.rows[0]?.contador || 1;
@@ -57,11 +66,72 @@ export async function checkAttendanceRateLimit(
       limit: maxAllowed,
     };
   } catch (error) {
-    // Si falla la tabla de rate limit (ej. en arranque inicial sin migración), permitir con advertencia en logs
-    console.warn('[RateLimit Warning] No se pudo verificar rate_limits en BD, permitiendo:', error);
-    return { allowed: true, count: 1, limit: maxAllowed };
+    // Si la tabla aún no se ha migrado de ip_hash a clave, intentar con ip_hash como fallback
+    try {
+      const fallbackRes = await query<{ contador: number }>(
+        `
+        INSERT INTO rate_limits (ip_hash, accion, minuto_epoch, contador)
+        VALUES ($1, $2, $3, 1)
+        ON CONFLICT (ip_hash, accion, minuto_epoch)
+        DO UPDATE SET contador = rate_limits.contador + 1
+        RETURNING contador;
+        `,
+        [clave.slice(0, 64), accion, currentMinute]
+      );
+      const count = fallbackRes.rows[0]?.contador || 1;
+      return { allowed: count <= maxAllowed, count, limit: maxAllowed };
+    } catch {
+      console.warn('[RateLimit Warning] No se pudo verificar rate_limits en BD, permitiendo:', error);
+      return { allowed: true, count: 1, limit: maxAllowed };
+    }
   }
 }
+
+/**
+ * Límite por IP para el registro de asistencias (1000 por minuto por IP).
+ * Permite que cientos de celulares compartan la misma IP pública (Wifi PUCP / antena móvil).
+ */
+export async function checkAttendanceIpRateLimit(
+  ipHash: string
+): Promise<{ allowed: boolean; count: number; limit: number }> {
+  return checkRateLimit(
+    ipHash,
+    'asistencia_ip',
+    EVENT_CONFIG.seguridad.maxAsistenciasPorMinutoPorIp
+  );
+}
+
+/**
+ * Límite por Correo Electrónico para registro de asistencia (máx. 5 intentos por minuto por correo).
+ * Frena abusos o scripts repetitivos con el mismo correo, incluso compartiendo IP.
+ */
+export async function checkAttendanceEmailRateLimit(
+  correo: string
+): Promise<{ allowed: boolean; count: number; limit: number }> {
+  const correoKey = correo.trim().toLowerCase();
+  return checkRateLimit(
+    correoKey,
+    'asistencia_correo',
+    EVENT_CONFIG.seguridad.maxAsistenciasPorMinutoPorCorreo
+  );
+}
+
+/**
+ * Límite por IP para consultar la ponencia abierta (1000 solicitudes por minuto por IP).
+ * Garantiza que el polling automático de los celulares no se bloquee durante el evento.
+ */
+export async function checkActivaIpRateLimit(
+  ipHash: string
+): Promise<{ allowed: boolean; count: number; limit: number }> {
+  return checkRateLimit(
+    ipHash,
+    'consulta_activa_ip',
+    EVENT_CONFIG.seguridad.maxConsultasActivaPorMinutoPorIp
+  );
+}
+
+// Alias de retrocompatibilidad
+export const checkAttendanceRateLimit = checkAttendanceIpRateLimit;
 
 /**
  * Verifica si la IP del staff está temporalmente bloqueada por exceso de intentos fallidos.

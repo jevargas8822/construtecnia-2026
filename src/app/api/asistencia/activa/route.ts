@@ -1,10 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { query, ensureDatabaseInitialized } from '@/lib/db';
+import { getClientIp, hashIp, checkActivaIpRateLimit } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Control de frecuencia por IP (1000 consultas por minuto por IP)
+    const clientIp = getClientIp(req.headers);
+    const ipHash = hashIp(clientIp);
+
+    const rateLimit = await checkActivaIpRateLimit(ipHash);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Has superado el límite de consultas permitidas. Por favor espera un momento.' },
+        { status: 429 }
+      );
+    }
+
     // Intentar consultar la ponencia activa
     let res = await query<{
       id: number;

@@ -21,12 +21,13 @@ function getPool(): Pool {
   const isProduction = process.env.NODE_ENV === 'production';
   const connectionString = process.env.DATABASE_URL;
 
-  // Supabase / Neon / Vercel Postgres usually require SSL in production
+  // Supabase / Neon (pooler o directo) / Vercel Postgres requieren SSL
   const requiresSsl =
     connectionString.includes('sslmode=require') ||
     connectionString.includes('neon.tech') ||
     connectionString.includes('supabase') ||
     connectionString.includes('vercel-storage') ||
+    connectionString.includes('pooler') ||
     isProduction;
 
   const pool = new Pool({
@@ -130,15 +131,30 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_inscritos_correo ON inscritos(correo);
     `);
 
-    // 4. Rate limits
+    // 4. Rate limits en base de datos para entornos Serverless (Vercel)
     await client.query(`
       CREATE TABLE IF NOT EXISTS rate_limits (
-        ip_hash VARCHAR(64) NOT NULL,
+        clave VARCHAR(128) NOT NULL,
         accion VARCHAR(32) NOT NULL,
         minuto_epoch BIGINT NOT NULL,
         contador INT NOT NULL DEFAULT 1,
-        PRIMARY KEY (ip_hash, accion, minuto_epoch)
+        PRIMARY KEY (clave, accion, minuto_epoch)
       );
+      CREATE INDEX IF NOT EXISTS idx_rate_limits_minuto ON rate_limits(minuto_epoch);
+    `);
+
+    // Migración automática si la tabla se creó previamente con columna ip_hash
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'rate_limits' AND column_name = 'ip_hash'
+        ) THEN
+          ALTER TABLE rate_limits RENAME COLUMN ip_hash TO clave;
+          ALTER TABLE rate_limits ALTER COLUMN clave TYPE VARCHAR(128);
+        END IF;
+      END $$;
     `);
 
     // 5. Intentos login staff
