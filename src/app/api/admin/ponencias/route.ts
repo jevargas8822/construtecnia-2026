@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query, ensureDatabaseInitialized } from '@/lib/db';
+import { query, ensureDatabaseInitialized, syncPonenciasSiEsNecesario } from '@/lib/db';
 import { isAuthenticatedStaff } from '@/lib/auth';
+import { EVENT_CONFIG } from '@/config';
+import { formatPonenciaFechaHorario } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +10,10 @@ export interface PonenciaAdminRow {
   id: number;
   orden: number;
   dia: number;
-  fecha: string;
+  fecha: string | Date;
+  horario?: string;
+  cargo?: string;
+  fecha_legible?: string;
   nombre: string;
   expositor: string | null;
   descripcion: string | null;
@@ -20,6 +25,7 @@ export interface PonenciaAdminRow {
 
 /**
  * GET: Obtiene las 8 ponencias con sus estados actuales y conteo en tiempo real de asistentes.
+ * Ejecuta sincronización automática contra src/config.ts (máximo 1 vez cada 5 min).
  */
 export async function GET() {
   const isAuth = await isAuthenticatedStaff();
@@ -28,6 +34,9 @@ export async function GET() {
   }
 
   try {
+    // Sincronización automática idempotente desde config.ts (máximo 1 vez cada 5 min por instancia)
+    await syncPonenciasSiEsNecesario();
+
     let res = await query<PonenciaAdminRow>(`
       SELECT 
         p.id,
@@ -69,7 +78,23 @@ export async function GET() {
       `);
     }
 
-    const ponencias = res.rows;
+    const ponencias = res.rows.map((p) => {
+      const cfg = EVENT_CONFIG.ponencias.find((c) => c.id === p.id || c.orden === p.orden);
+      const fechaStr = p.fecha instanceof Date
+        ? p.fecha.toISOString().split('T')[0]
+        : String(p.fecha).split('T')[0];
+      const horario = cfg?.horario || '4–5 PM';
+      const cargo = cfg?.cargo || p.expositor || '';
+
+      return {
+        ...p,
+        fecha: fechaStr,
+        horario,
+        cargo,
+        fecha_legible: formatPonenciaFechaHorario(fechaStr, horario, p.dia),
+      };
+    });
+
     const ponenciaAbierta = ponencias.find((p) => p.estado === 'abierta') || null;
     const totalAsistenciasRegistradas = ponencias.reduce((acc, p) => acc + (p.total_asistentes || 0), 0);
 

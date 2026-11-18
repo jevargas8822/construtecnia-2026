@@ -7,12 +7,15 @@ export const RATE_LIMIT_ADMIN_LOGIN_INTENTOS = 5;
 export const RATE_LIMIT_ADMIN_LOGIN_BLOQUEO_MINUTOS = 10;
 
 export interface PonenciaConfig {
+  id: number;
   orden: number;
   dia: number;
   fecha: string; // YYYY-MM-DD
-  horaEstimada: string;
+  horario: string; // ej. "4–5 PM"
+  horaEstimada: string; // alias para compatibilidad
   nombre: string;
-  expositor?: string;
+  cargo: string;
+  expositor?: string; // alias para compatibilidad
   descripcion?: string;
 }
 
@@ -43,7 +46,6 @@ export const EVENT_CONFIG = {
       errorMensaje: "El DNI debe contener exactamente 8 dígitos numéricos.",
     },
     correo: {
-      // Regex estándar robusto para correos
       regex: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
       errorMensaje: "Por favor, ingresa un correo electrónico válido.",
     },
@@ -58,79 +60,103 @@ export const EVENT_CONFIG = {
     minutosBloqueoLoginStaff: RATE_LIMIT_ADMIN_LOGIN_BLOQUEO_MINUTOS,
   },
 
-  // Las 8 ponencias oficiales del congreso (4 por día: 23 y 24 de noviembre)
+  // Las 8 ponencias oficiales del congreso (Única fuente de verdad: id 1 a 8)
   ponencias: [
     {
+      id: 1,
       orden: 1,
       dia: 1,
       fecha: "2026-11-23",
+      horario: "4–5 PM",
       horaEstimada: "4–5 PM",
       nombre: "Barton Aliaga · AECOM",
-      expositor: "Ingeniero Geotécnico · 4–5 PM",
-      descripcion: "Ingeniero Geotécnico — Horario: 4–5 PM",
+      cargo: "Ingeniero Geotécnico",
+      expositor: "Ingeniero Geotécnico",
+      descripcion: "Ingeniero Geotécnico",
     },
     {
+      id: 2,
       orden: 2,
       dia: 1,
       fecha: "2026-11-23",
+      horario: "5–6 PM",
       horaEstimada: "5–6 PM",
       nombre: "Karla Vallejos · Pacasmayo (Prefabricados)",
-      expositor: "Subgerenta de Ingeniería y Prospección · 5–6 PM",
-      descripcion: "Subgerenta de Ingeniería y Prospección — Horario: 5–6 PM",
+      cargo: "Subgerenta de Ingeniería y Prospección",
+      expositor: "Subgerenta de Ingeniería y Prospección",
+      descripcion: "Subgerenta de Ingeniería y Prospección",
     },
     {
+      id: 3,
       orden: 3,
       dia: 1,
       fecha: "2026-11-23",
+      horario: "6–7 PM",
       horaEstimada: "6–7 PM",
       nombre: "Fernando Chávez · PDK",
-      expositor: "Subgerente de PMO · 6–7 PM",
-      descripcion: "Subgerente de PMO — Horario: 6–7 PM",
+      cargo: "Subgerente de PMO",
+      expositor: "Subgerente de PMO",
+      descripcion: "Subgerente de PMO",
     },
     {
+      id: 4,
       orden: 4,
       dia: 1,
       fecha: "2026-11-23",
+      horario: "7–8 PM",
       horaEstimada: "7–8 PM",
       nombre: "Yerssy Saavedra · Gleeds",
-      expositor: "Assistant Contract Manager · 7–8 PM",
-      descripcion: "Assistant Contract Manager — Horario: 7–8 PM",
+      cargo: "Assistant Contract Manager",
+      expositor: "Assistant Contract Manager",
+      descripcion: "Assistant Contract Manager",
     },
     {
+      id: 5,
       orden: 5,
       dia: 2,
       fecha: "2026-11-24",
+      horario: "4–5 PM",
       horaEstimada: "4–5 PM",
       nombre: "Toninho Serrano · PROMET",
-      expositor: "Director de Operaciones Regional (Perú y Chile) · 4–5 PM",
-      descripcion: "Director de Operaciones Regional (Perú y Chile) — Horario: 4–5 PM",
+      cargo: "Director de Operaciones Regional (Perú y Chile)",
+      expositor: "Director de Operaciones Regional (Perú y Chile)",
+      descripcion: "Director de Operaciones Regional (Perú y Chile)",
     },
     {
+      id: 6,
       orden: 6,
       dia: 2,
       fecha: "2026-11-24",
+      horario: "5–6 PM",
       horaEstimada: "5–6 PM",
       nombre: "Gonzalo Vigo · Pacasmayo (Pavimentos)",
-      expositor: "Jefe de Ingeniería de Pavimentos · 5–6 PM",
-      descripcion: "Jefe de Ingeniería de Pavimentos — Horario: 5–6 PM",
+      cargo: "Jefe de Ingeniería de Pavimentos",
+      expositor: "Jefe de Ingeniería de Pavimentos",
+      descripcion: "Jefe de Ingeniería de Pavimentos",
     },
     {
+      id: 7,
       orden: 7,
       dia: 2,
       fecha: "2026-11-24",
+      horario: "6–7 PM",
       horaEstimada: "6–7 PM",
       nombre: "Gustavo Loa · Prisma Ingeniería",
-      expositor: "Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras, Profesor PUCP · 6–7 PM",
-      descripcion: "Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras, Profesor PUCP — Horario: 6–7 PM",
+      cargo: "Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras · Profesor PUCP",
+      expositor: "Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras · Profesor PUCP",
+      descripcion: "Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras · Profesor PUCP",
     },
     {
+      id: 8,
       orden: 8,
       dia: 2,
       fecha: "2026-11-24",
+      horario: "7–8 PM",
       horaEstimada: "7–8 PM",
       nombre: "Ronald Roosvelt y Omar Alfaro · COSAPI",
-      expositor: "Ingeniero y Gerente de la Unidad de Proyectos Colaborativos · 7–8 PM",
-      descripcion: "Ingeniero y Gerente de la Unidad de Proyectos Colaborativos — Horario: 7–8 PM",
+      cargo: "Ingeniero y Gerente de la Unidad de Proyectos Colaborativos",
+      expositor: "Ingeniero y Gerente de la Unidad de Proyectos Colaborativos",
+      descripcion: "Ingeniero y Gerente de la Unidad de Proyectos Colaborativos",
     },
   ] as PonenciaConfig[],
 };

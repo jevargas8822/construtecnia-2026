@@ -87,14 +87,14 @@ CREATE TABLE IF NOT EXISTS admin_intentos_login (
 -- ==============================================================================
 INSERT INTO ponencias (orden, dia, fecha, nombre, expositor, descripcion, estado)
 VALUES
-    (1, 1, '2026-11-23', 'Barton Aliaga · AECOM', 'Ingeniero Geotécnico · 4–5 PM', 'Ingeniero Geotécnico — Horario: 4–5 PM', 'cerrada'),
-    (2, 1, '2026-11-23', 'Karla Vallejos · Pacasmayo (Prefabricados)', 'Subgerenta de Ingeniería y Prospección · 5–6 PM', 'Subgerenta de Ingeniería y Prospección — Horario: 5–6 PM', 'cerrada'),
-    (3, 1, '2026-11-23', 'Fernando Chávez · PDK', 'Subgerente de PMO · 6–7 PM', 'Subgerente de PMO — Horario: 6–7 PM', 'cerrada'),
-    (4, 1, '2026-11-23', 'Yerssy Saavedra · Gleeds', 'Assistant Contract Manager · 7–8 PM', 'Assistant Contract Manager — Horario: 7–8 PM', 'cerrada'),
-    (5, 2, '2026-11-24', 'Toninho Serrano · PROMET', 'Director de Operaciones Regional (Perú y Chile) · 4–5 PM', 'Director de Operaciones Regional (Perú y Chile) — Horario: 4–5 PM', 'cerrada'),
-    (6, 2, '2026-11-24', 'Gonzalo Vigo · Pacasmayo (Pavimentos)', 'Jefe de Ingeniería de Pavimentos · 5–6 PM', 'Jefe de Ingeniería de Pavimentos — Horario: 5–6 PM', 'cerrada'),
-    (7, 2, '2026-11-24', 'Gustavo Loa · Prisma Ingeniería', 'Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras, Profesor PUCP · 6–7 PM', 'Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras, Profesor PUCP — Horario: 6–7 PM', 'cerrada'),
-    (8, 2, '2026-11-24', 'Ronald Roosvelt y Omar Alfaro · COSAPI', 'Ingeniero y Gerente de la Unidad de Proyectos Colaborativos · 7–8 PM', 'Ingeniero y Gerente de la Unidad de Proyectos Colaborativos — Horario: 7–8 PM', 'cerrada')
+    (1, 1, '2026-11-23', 'Barton Aliaga · AECOM', 'Ingeniero Geotécnico', 'Ingeniero Geotécnico', 'cerrada'),
+    (2, 1, '2026-11-23', 'Karla Vallejos · Pacasmayo (Prefabricados)', 'Subgerenta de Ingeniería y Prospección', 'Subgerenta de Ingeniería y Prospección', 'cerrada'),
+    (3, 1, '2026-11-23', 'Fernando Chávez · PDK', 'Subgerente de PMO', 'Subgerente de PMO', 'cerrada'),
+    (4, 1, '2026-11-23', 'Yerssy Saavedra · Gleeds', 'Assistant Contract Manager', 'Assistant Contract Manager', 'cerrada'),
+    (5, 2, '2026-11-24', 'Toninho Serrano · PROMET', 'Director de Operaciones Regional (Perú y Chile)', 'Director de Operaciones Regional (Perú y Chile)', 'cerrada'),
+    (6, 2, '2026-11-24', 'Gonzalo Vigo · Pacasmayo (Pavimentos)', 'Jefe de Ingeniería de Pavimentos', 'Jefe de Ingeniería de Pavimentos', 'cerrada'),
+    (7, 2, '2026-11-24', 'Gustavo Loa · Prisma Ingeniería', 'Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras · Profesor PUCP', 'Jefe del Área I+D+i y de Revisión de Proyectos de Estructuras · Profesor PUCP', 'cerrada'),
+    (8, 2, '2026-11-24', 'Ronald Roosvelt y Omar Alfaro · COSAPI', 'Ingeniero y Gerente de la Unidad de Proyectos Colaborativos', 'Ingeniero y Gerente de la Unidad de Proyectos Colaborativos', 'cerrada')
 ON CONFLICT (orden) DO UPDATE 
 SET 
     dia = EXCLUDED.dia,

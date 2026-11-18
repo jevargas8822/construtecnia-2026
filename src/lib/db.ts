@@ -1,5 +1,6 @@
 import { Pool, QueryResult, QueryResultRow } from 'pg';
 import { EVENT_CONFIG } from '@/config';
+export { syncPonenciasSiEsNecesario, ejecutarSincronizacionPonencias } from '@/lib/sync-ponencias';
 
 // Global singleton pool for Next.js development hot-reloading & serverless pooling
 declare global {
@@ -169,11 +170,13 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
     // 6. Cargar o actualizar las 8 ponencias de config.ts
     for (const p of EVENT_CONFIG.ponencias) {
+      const cargoTexto = p.cargo || p.expositor || null;
+      const descripcionTexto = p.descripcion || cargoTexto;
       await client.query(
         `
-        INSERT INTO ponencias (orden, dia, fecha, nombre, expositor, descripcion, estado)
-        VALUES ($1, $2, $3, $4, $5, $6, 'cerrada')
-        ON CONFLICT (orden) DO UPDATE
+        INSERT INTO ponencias (id, orden, dia, fecha, nombre, expositor, descripcion, estado)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'cerrada')
+        ON CONFLICT (id) DO UPDATE
         SET 
           dia = EXCLUDED.dia,
           fecha = EXCLUDED.fecha,
@@ -181,7 +184,7 @@ export async function ensureDatabaseInitialized(): Promise<void> {
           expositor = EXCLUDED.expositor,
           descripcion = EXCLUDED.descripcion;
       `,
-        [p.orden, p.dia, p.fecha, p.nombre, p.expositor || null, p.descripcion || null]
+        [p.id, p.orden, p.dia, p.fecha, p.nombre, cargoTexto, descripcionTexto]
       );
     }
 

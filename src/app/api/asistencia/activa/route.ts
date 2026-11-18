@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query, ensureDatabaseInitialized } from '@/lib/db';
+import { query, ensureDatabaseInitialized, syncPonenciasSiEsNecesario } from '@/lib/db';
 import { getClientIp, hashIp, checkActivaIpRateLimit } from '@/lib/security';
+import { EVENT_CONFIG } from '@/config';
+import { formatPonenciaFechaHorario } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +20,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Sincronización automática periódica (máximo 1 vez cada 5 min por instancia)
+    await syncPonenciasSiEsNecesario();
+
     // Intentar consultar la ponencia activa
     let res = await query<{
       id: number;
       orden: number;
       dia: number;
-      fecha: string;
+      fecha: string | Date;
       nombre: string;
       expositor: string | null;
       descripcion: string | null;
@@ -46,7 +51,25 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const ponenciaActiva = res.rows[0] || null;
+    const fila = res.rows[0] || null;
+    let ponenciaActiva = null;
+
+    if (fila) {
+      const cfg = EVENT_CONFIG.ponencias.find((c) => c.id === fila.id || c.orden === fila.orden);
+      const fechaStr = fila.fecha instanceof Date
+        ? fila.fecha.toISOString().split('T')[0]
+        : String(fila.fecha).split('T')[0];
+      const horario = cfg?.horario || '4–5 PM';
+      const cargo = cfg?.cargo || fila.expositor || '';
+
+      ponenciaActiva = {
+        ...fila,
+        fecha: fechaStr,
+        horario,
+        cargo,
+        fecha_legible: formatPonenciaFechaHorario(fechaStr, horario, fila.dia),
+      };
+    }
 
     return NextResponse.json({
       hayPonenciaAbierta: !!ponenciaActiva,

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { EVENT_CONFIG } from '@/config';
+import { formatPonenciaFechaHorario } from '@/lib/date-utils';
 import {
   Play,
   Square,
@@ -25,6 +26,9 @@ interface Ponencia {
   orden: number;
   dia: number;
   fecha: string;
+  horario?: string;
+  cargo?: string;
+  fecha_legible?: string;
   nombre: string;
   expositor: string | null;
   descripcion: string | null;
@@ -474,14 +478,21 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
 
-                  <h2 className="text-xl md:text-3xl font-black text-white leading-tight">
+                  <h2 className="text-xl md:text-3xl font-black text-white leading-tight break-words">
                     {ponenciaAbierta ? ponenciaAbierta.nombre : 'No hay ponencia abierta actualmente'}
                   </h2>
 
-                  {ponenciaAbierta?.expositor && (
-                    <p className="text-sm text-adeic-gold-300 font-semibold mt-1">
-                      {ponenciaAbierta.expositor}
-                    </p>
+                  {ponenciaAbierta && (
+                    <div className="mt-1 space-y-0.5">
+                      {(ponenciaAbierta.cargo || ponenciaAbierta.expositor) && (
+                        <p className="text-sm text-adeic-gold-300 font-semibold break-words">
+                          {ponenciaAbierta.cargo || ponenciaAbierta.expositor}
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-300 font-medium">
+                        {ponenciaAbierta.fecha_legible || formatPonenciaFechaHorario(ponenciaAbierta.fecha, ponenciaAbierta.horario, ponenciaAbierta.dia)}
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -545,42 +556,42 @@ export default function AdminDashboardPage() {
                         estaAbierta ? 'bg-amber-50/70 border-l-8 border-adeic-gold-500' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <div className="space-y-1.5 flex-1">
+                      <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-adeic-navy-900 text-adeic-gold-400 text-xs font-black px-2.5 py-0.5 rounded-md">
+                          <span className="bg-adeic-navy-900 text-adeic-gold-400 text-xs font-black px-2.5 py-0.5 rounded-md whitespace-nowrap">
                             Ponencia #{p.orden}
                           </span>
-                          <span className="bg-slate-200 text-slate-800 text-xs font-bold px-2 py-0.5 rounded">
-                            Día {p.dia} • {p.fecha}
+                          <span className="bg-slate-200 text-slate-800 text-xs font-bold px-2.5 py-0.5 rounded whitespace-nowrap">
+                            {p.fecha_legible || formatPonenciaFechaHorario(p.fecha, p.horario, p.dia)}
                           </span>
                           {estaAbierta ? (
-                            <span className="bg-emerald-600 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                            <span className="bg-emerald-600 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full flex items-center space-x-1 whitespace-nowrap">
                               <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                               <span>ABIERTA</span>
                             </span>
                           ) : (
-                            <span className="bg-slate-300 text-slate-700 text-xs font-bold px-2 py-0.5 rounded">
+                            <span className="bg-slate-300 text-slate-700 text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap">
                               Cerrada
                             </span>
                           )}
                         </div>
 
-                        <h4 className="text-base font-extrabold text-adeic-navy-950 leading-snug">
+                        <h4 className="text-base font-extrabold text-adeic-navy-950 leading-snug break-words">
                           {p.nombre}
                         </h4>
 
-                        {p.expositor && (
-                          <p className="text-xs text-adeic-navy-700 font-semibold">
-                            {p.expositor}
+                        {(p.cargo || p.expositor) && (
+                          <p className="text-xs text-slate-600 font-semibold leading-relaxed break-words">
+                            {p.cargo || p.expositor}
                           </p>
                         )}
 
                         <div className="text-[11px] text-slate-500 flex flex-wrap gap-x-4 gap-y-1 pt-1">
                           {p.abierta_en && (
-                            <span>Apertura: {new Date(p.abierta_en).toLocaleTimeString('es-PE', { hour12: true })}</span>
+                            <span>Apertura: {new Date(p.abierta_en).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour12: true })}</span>
                           )}
                           {p.cerrada_en && (
-                            <span>Cierre: {new Date(p.cerrada_en).toLocaleTimeString('es-PE', { hour12: true })}</span>
+                            <span>Cierre: {new Date(p.cerrada_en).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour12: true })}</span>
                           )}
                         </div>
                       </div>

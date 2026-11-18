@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { EVENT_CONFIG } from '@/config';
+import { formatPonenciaFechaHorario } from '@/lib/date-utils';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -20,6 +21,9 @@ interface PonenciaActiva {
   orden: number;
   dia: number;
   fecha: string;
+  horario?: string;
+  cargo?: string;
+  fecha_legible?: string;
   nombre: string;
   expositor: string | null;
   descripcion: string | null;
@@ -267,18 +271,24 @@ export default function AsistenciaPage() {
                     <span>EN VIVO</span>
                   </div>
 
-                  <div className="flex items-center space-x-2 text-adeic-gold-400 text-xs font-bold uppercase tracking-wider mb-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Ponencia Abierta para Asistencia</span>
+                  <div className="flex flex-wrap items-center gap-2 text-adeic-gold-400 text-xs font-bold uppercase tracking-wider mb-2">
+                    <span className="flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Ponencia #{ponenciaActiva.orden}</span>
+                    </span>
+                    <span>•</span>
+                    <span className="bg-adeic-navy-800 text-adeic-gold-300 px-2 py-0.5 rounded text-[11px] font-bold">
+                      {ponenciaActiva.fecha_legible || formatPonenciaFechaHorario(ponenciaActiva.fecha, ponenciaActiva.horario, ponenciaActiva.dia)}
+                    </span>
                   </div>
 
-                  <h2 className="text-lg md:text-xl font-black leading-snug text-white mt-1 mb-1">
+                  <h2 className="text-lg md:text-xl font-black leading-snug text-white mt-1 mb-1 break-words">
                     {ponenciaActiva.nombre}
                   </h2>
 
-                  {ponenciaActiva.expositor && (
-                    <p className="text-xs text-adeic-gold-300 font-semibold leading-relaxed">
-                      {ponenciaActiva.expositor}
+                  {(ponenciaActiva.cargo || ponenciaActiva.expositor) && (
+                    <p className="text-xs text-adeic-gold-300 font-semibold leading-relaxed mt-1 break-words">
+                      {ponenciaActiva.cargo || ponenciaActiva.expositor}
                     </p>
                   )}
 
