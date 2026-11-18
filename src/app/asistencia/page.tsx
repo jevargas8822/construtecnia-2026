@@ -272,13 +272,13 @@ export default function AsistenciaPage() {
                     <span>Ponencia Abierta para Asistencia</span>
                   </div>
 
-                  <h2 className="text-lg md:text-xl font-black leading-snug text-white mt-1 mb-2">
+                  <h2 className="text-lg md:text-xl font-black leading-snug text-white mt-1 mb-1">
                     {ponenciaActiva.nombre}
                   </h2>
 
                   {ponenciaActiva.expositor && (
-                    <p className="text-xs text-slate-300 font-medium">
-                      Expositor: <span className="text-white font-semibold">{ponenciaActiva.expositor}</span>
+                    <p className="text-xs text-adeic-gold-300 font-semibold leading-relaxed">
+                      {ponenciaActiva.expositor}
                     </p>
                   )}
 

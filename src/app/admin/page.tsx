@@ -479,8 +479,8 @@ export default function AdminDashboardPage() {
                   </h2>
 
                   {ponenciaAbierta?.expositor && (
-                    <p className="text-sm text-slate-300 mt-1">
-                      Expositor: <span className="text-white font-semibold">{ponenciaAbierta.expositor}</span>
+                    <p className="text-sm text-adeic-gold-300 font-semibold mt-1">
+                      {ponenciaAbierta.expositor}
                     </p>
                   )}
                 </div>
@@ -570,8 +570,8 @@ export default function AdminDashboardPage() {
                         </h4>
 
                         {p.expositor && (
-                          <p className="text-xs text-slate-600 font-medium">
-                            Expositor: <span className="font-bold text-slate-800">{p.expositor}</span>
+                          <p className="text-xs text-adeic-navy-700 font-semibold">
+                            {p.expositor}
                           </p>
                         )}
 

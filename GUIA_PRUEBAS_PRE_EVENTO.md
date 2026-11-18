@@ -32,7 +32,7 @@ Sigue este protocolo de pruebas antes del evento para validar que el sistema fun
 4. **Resultado esperado:**
    - En un máximo de 5 segundos, la tarjeta en el celular cambia automáticamente a azul marino y dorado con el distintivo **"EN VIVO"**.
    - Aparece el título oficial:
-     > *"Ponencia 1: Innovación en Estructuras Sismorresistentes y Concreto de Alto Desempeño"*
+     > *"Barton Aliaga · AECOM"*
    - El botón se activa en dorado: *"Registrar mi Asistencia"*.
 
 ---
@@ -47,7 +47,7 @@ Sigue este protocolo de pruebas antes del evento para validar que el sistema fun
 2. **Resultado esperado:**
    - Animación de carga breve (< 1 segundo).
    - Mensaje de confirmación:
-     > *"¡Asistencia registrada para Ponencia 1: Innovación en Estructuras Sismorresistentes y Concreto de Alto Desempeño!"*
+     > *"¡Asistencia registrada para Barton Aliaga · AECOM!"*
    - Muestra la fecha y hora exacta en zona horaria **America/Lima (UTC-5)**.
    - Se muestra el aviso: *"Tus datos se guardaron en este celular."*
 
