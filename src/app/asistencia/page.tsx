@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { EVENT_CONFIG } from '@/config';
 import { formatPonenciaFechaHorario } from '@/lib/date-utils';
+import { validarNombreOApellido } from '@/lib/string-utils';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -38,6 +39,8 @@ export default function AsistenciaPage() {
   const [cargandoPonencia, setCargandoPonencia] = useState(true);
 
   // Estado del formulario
+  const [nombres, setNombres] = useState('');
+  const [apellidos, setApellidos] = useState('');
   const [correo, setCorreo] = useState('');
   const [tipoId, setTipoId] = useState<'alumno_pucp' | 'externo'>('alumno_pucp');
   const [documento, setDocumento] = useState('');
@@ -50,6 +53,7 @@ export default function AsistenciaPage() {
     mensaje: string;
     ponenciaNombre: string;
     ponenciaOrden: number;
+    nombreCompleto?: string;
     correo: string;
     registradoEn: string;
   } | null>(null);
@@ -60,6 +64,8 @@ export default function AsistenciaPage() {
       const guardado = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (guardado) {
         const datos = JSON.parse(guardado);
+        if (datos.nombres) setNombres(datos.nombres);
+        if (datos.apellidos) setApellidos(datos.apellidos);
         if (datos.correo) setCorreo(datos.correo);
         if (datos.tipoId === 'alumno_pucp' || datos.tipoId === 'externo') setTipoId(datos.tipoId);
         if (datos.documento) setDocumento(datos.documento);
@@ -99,6 +105,18 @@ export default function AsistenciaPage() {
     setErrorMensaje(null);
 
     // Validación preliminar en navegador (la validación principal y definitiva ocurre en el servidor)
+    const valNombres = validarNombreOApellido(nombres, 'Nombres');
+    if (!valNombres.valido) {
+      setErrorMensaje(valNombres.error || 'Revisa el campo Nombres.');
+      return;
+    }
+
+    const valApellidos = validarNombreOApellido(apellidos, 'Apellidos');
+    if (!valApellidos.valido) {
+      setErrorMensaje(valApellidos.error || 'Revisa el campo Apellidos.');
+      return;
+    }
+
     const correoLimpio = correo.trim().toLowerCase();
     const docLimpio = documento.trim().replace(/\s+/g, '');
 
@@ -131,6 +149,8 @@ export default function AsistenciaPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          nombres: valNombres.limpio,
+          apellidos: valApellidos.limpio,
           correo: correoLimpio,
           tipo_id: tipoId,
           documento: docLimpio,
@@ -148,6 +168,8 @@ export default function AsistenciaPage() {
           localStorage.setItem(
             LOCAL_STORAGE_KEY,
             JSON.stringify({
+              nombres: valNombres.limpio,
+              apellidos: valApellidos.limpio,
               correo: correoLimpio,
               tipoId,
               documento: docLimpio,
@@ -225,8 +247,16 @@ export default function AsistenciaPage() {
                   #{exitoInfo.ponenciaOrden}
                 </span>
               </div>
+              {exitoInfo.nombreCompleto && (
+                <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                  <span className="text-slate-500 font-medium">Nombre:</span>
+                  <span className="text-adeic-navy-900 font-semibold text-right ml-2">
+                    {exitoInfo.nombreCompleto}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-                <span className="text-slate-500 font-medium">Asistente:</span>
+                <span className="text-slate-500 font-medium">Correo:</span>
                 <span className="text-adeic-navy-900 font-semibold break-all text-right ml-2">
                   {exitoInfo.correo}
                 </span>
@@ -352,23 +382,20 @@ export default function AsistenciaPage() {
                   <button
                     type="button"
                     onClick={() => setTipoId('alumno_pucp')}
-                    className={`min-h-[54px] px-3 py-2 rounded-xl border-2 text-left flex items-center space-x-2.5 transition active:scale-[0.98] ${
-                      tipoId === 'alumno_pucp'
+                    className={`min-h-[54px] px-3 py-2 rounded-xl border-2 text-left flex items-center space-x-2.5 transition active:scale-[0.98] ${tipoId === 'alumno_pucp'
                         ? 'border-adeic-navy-900 bg-adeic-navy-900 text-white shadow-sm'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     <GraduationCap
-                      className={`w-5 h-5 flex-shrink-0 ${
-                        tipoId === 'alumno_pucp' ? 'text-adeic-gold-400' : 'text-slate-500'
-                      }`}
+                      className={`w-5 h-5 flex-shrink-0 ${tipoId === 'alumno_pucp' ? 'text-adeic-gold-400' : 'text-slate-500'
+                        }`}
                     />
                     <div className="leading-tight">
                       <div className="text-xs font-extrabold">Alumno PUCP</div>
                       <div
-                        className={`text-[10px] ${
-                          tipoId === 'alumno_pucp' ? 'text-slate-300' : 'text-slate-500'
-                        }`}
+                        className={`text-[10px] ${tipoId === 'alumno_pucp' ? 'text-slate-300' : 'text-slate-500'
+                          }`}
                       >
                         Código 8 dígitos
                       </div>
@@ -378,29 +405,68 @@ export default function AsistenciaPage() {
                   <button
                     type="button"
                     onClick={() => setTipoId('externo')}
-                    className={`min-h-[54px] px-3 py-2 rounded-xl border-2 text-left flex items-center space-x-2.5 transition active:scale-[0.98] ${
-                      tipoId === 'externo'
+                    className={`min-h-[54px] px-3 py-2 rounded-xl border-2 text-left flex items-center space-x-2.5 transition active:scale-[0.98] ${tipoId === 'externo'
                         ? 'border-adeic-navy-900 bg-adeic-navy-900 text-white shadow-sm'
                         : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     <Users
-                      className={`w-5 h-5 flex-shrink-0 ${
-                        tipoId === 'externo' ? 'text-adeic-gold-400' : 'text-slate-500'
-                      }`}
+                      className={`w-5 h-5 flex-shrink-0 ${tipoId === 'externo' ? 'text-adeic-gold-400' : 'text-slate-500'
+                        }`}
                     />
                     <div className="leading-tight">
                       <div className="text-xs font-extrabold">No soy PUCP</div>
                       <div
-                        className={`text-[10px] ${
-                          tipoId === 'externo' ? 'text-slate-300' : 'text-slate-500'
-                        }`}
+                        className={`text-[10px] ${tipoId === 'externo' ? 'text-slate-300' : 'text-slate-500'
+                          }`}
                       >
                         DNI 8 dígitos
                       </div>
                     </div>
                   </button>
                 </div>
+              </div>
+
+              {/* CAMPO NOMBRES */}
+              <div>
+                <label
+                  htmlFor="nombres"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+                >
+                  Nombres <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="nombres"
+                  type="text"
+                  autoComplete="given-name"
+                  maxLength={80}
+                  placeholder="Ej. Juan Carlos"
+                  value={nombres}
+                  onChange={(e) => setNombres(e.target.value)}
+                  required
+                  className="w-full min-h-[50px] px-4 rounded-xl border-2 border-slate-300 focus:border-adeic-navy-900 focus:ring-2 focus:ring-adeic-navy-900/20 text-base font-semibold text-slate-900 placeholder:text-slate-400 transition"
+                />
+              </div>
+
+              {/* CAMPO APELLIDOS */}
+              <div>
+                <label
+                  htmlFor="apellidos"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5"
+                >
+                  Apellidos <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="apellidos"
+                  type="text"
+                  autoComplete="family-name"
+                  maxLength={80}
+                  placeholder="Ej. Pérez Gómez"
+                  value={apellidos}
+                  onChange={(e) => setApellidos(e.target.value)}
+                  required
+                  className="w-full min-h-[50px] px-4 rounded-xl border-2 border-slate-300 focus:border-adeic-navy-900 focus:ring-2 focus:ring-adeic-navy-900/20 text-base font-semibold text-slate-900 placeholder:text-slate-400 transition"
+                />
               </div>
 
               {/* CAMPO DOCUMENTO / CÓDIGO */}
@@ -479,13 +545,12 @@ export default function AsistenciaPage() {
                 <button
                   type="submit"
                   disabled={enviando || !ponenciaActiva}
-                  className={`w-full min-h-[56px] rounded-xl font-black text-base uppercase tracking-wider shadow-lg flex items-center justify-center space-x-2 transition active:scale-[0.98] ${
-                    !ponenciaActiva
+                  className={`w-full min-h-[56px] rounded-xl font-black text-base uppercase tracking-wider shadow-lg flex items-center justify-center space-x-2 transition active:scale-[0.98] ${!ponenciaActiva
                       ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
                       : enviando
-                      ? 'bg-adeic-gold-400 text-adeic-navy-950 opacity-90 cursor-wait'
-                      : 'bg-adeic-gold-500 hover:bg-adeic-gold-400 text-adeic-navy-950 border-2 border-adeic-gold-400'
-                  }`}
+                        ? 'bg-adeic-gold-400 text-adeic-navy-950 opacity-90 cursor-wait'
+                        : 'bg-adeic-gold-500 hover:bg-adeic-gold-400 text-adeic-navy-950 border-2 border-adeic-gold-400'
+                    }`}
                 >
                   {enviando ? (
                     <>

@@ -25,6 +25,8 @@ CREATE INDEX IF NOT EXISTS idx_ponencias_orden ON ponencias(orden);
 -- 2. TABLA DE ASISTENCIAS
 CREATE TABLE IF NOT EXISTS asistencias (
     id SERIAL PRIMARY KEY,
+    nombres TEXT,
+    apellidos TEXT,
     correo VARCHAR(255) NOT NULL,
     tipo_id VARCHAR(50) NOT NULL CHECK (tipo_id IN ('alumno_pucp', 'externo')),
     documento VARCHAR(50) NOT NULL,
@@ -33,6 +35,10 @@ CREATE TABLE IF NOT EXISTS asistencias (
     ip_hash VARCHAR(64) NOT NULL,
     CONSTRAINT uq_asistencias_correo_ponencia UNIQUE (correo, ponencia_id)
 );
+
+-- Migración segura para bases de datos existentes
+ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS nombres TEXT;
+ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS apellidos TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_asistencias_ponencia_id ON asistencias(ponencia_id);
 CREATE INDEX IF NOT EXISTS idx_asistencias_correo ON asistencias(correo);

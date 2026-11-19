@@ -2,6 +2,35 @@ import { Pool, QueryResult, QueryResultRow } from 'pg';
 import { EVENT_CONFIG } from '@/config';
 export { syncPonenciasSiEsNecesario, ejecutarSincronizacionPonencias } from '@/lib/sync-ponencias';
 
+// Control en memoria para ejecutar migraciones una sola vez por instancia
+let migrationsRan = false;
+let migrationsPromise: Promise<void> | null = null;
+
+/**
+ * Aplica migraciones DDL automáticas e idempotentes.
+ * Corre como máximo una vez por instancia (en la primera consulta o arranque).
+ */
+export async function ensureMigrations(): Promise<void> {
+  if (migrationsRan) return;
+  if (migrationsPromise) return migrationsPromise;
+
+  migrationsPromise = (async () => {
+    try {
+      await query(`
+        ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS nombres TEXT;
+        ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS apellidos TEXT;
+      `);
+      migrationsRan = true;
+    } catch (err: unknown) {
+      console.warn('[DB Migration Warning]:', err);
+    } finally {
+      migrationsPromise = null;
+    }
+  })();
+
+  return migrationsPromise;
+}
+
 // Global singleton pool for Next.js development hot-reloading & serverless pooling
 declare global {
   // eslint-disable-next-line no-var
@@ -43,9 +72,8 @@ function getPool(): Pool {
     console.error('[DB Error] Error imprevisto en el pool de PostgreSQL:', err);
   });
 
-  if (process.env.NODE_ENV !== 'production') {
-    global.__postgres_pool__ = pool;
-  }
+global.__postgres_pool__ = pool;
+  
 
   return pool;
 }
@@ -105,6 +133,8 @@ export async function ensureDatabaseInitialized(): Promise<void> {
     await client.query(`
       CREATE TABLE IF NOT EXISTS asistencias (
         id SERIAL PRIMARY KEY,
+        nombres TEXT,
+        apellidos TEXT,
         correo VARCHAR(255) NOT NULL,
         tipo_id VARCHAR(50) NOT NULL CHECK (tipo_id IN ('alumno_pucp', 'externo')),
         documento VARCHAR(50) NOT NULL,
@@ -113,6 +143,8 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         ip_hash VARCHAR(64) NOT NULL,
         CONSTRAINT uq_asistencias_correo_ponencia UNIQUE (correo, ponencia_id)
       );
+      ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS nombres TEXT;
+      ALTER TABLE asistencias ADD COLUMN IF NOT EXISTS apellidos TEXT;
       CREATE INDEX IF NOT EXISTS idx_asistencias_ponencia_id ON asistencias(ponencia_id);
       CREATE INDEX IF NOT EXISTS idx_asistencias_correo ON asistencias(correo);
       CREATE INDEX IF NOT EXISTS idx_asistencias_documento ON asistencias(documento);

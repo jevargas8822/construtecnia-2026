@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query, ensureDatabaseInitialized } from '@/lib/db';
+import { query, ensureDatabaseInitialized, ensureMigrations } from '@/lib/db';
 import { EVENT_CONFIG } from '@/config';
 import {
   getClientIp,
@@ -8,6 +8,7 @@ import {
   checkAttendanceEmailRateLimit,
 } from '@/lib/security';
 import { formatLimaDateTime } from '@/lib/date-utils';
+import { validarNombreOApellido, normalizarNombrePropio } from '@/lib/string-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,14 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Extracción y parseo seguro del cuerpo JSON
-    let body: { correo?: unknown; tipo_id?: unknown; documento?: unknown; consentimiento?: unknown };
+    let body: {
+      nombres?: unknown;
+      apellidos?: unknown;
+      correo?: unknown;
+      tipo_id?: unknown;
+      documento?: unknown;
+      consentimiento?: unknown;
+    };
     try {
       body = await req.json();
     } catch {
@@ -39,7 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { correo, tipo_id, documento, consentimiento } = body;
+    const { nombres, apellidos, correo, tipo_id, documento, consentimiento } = body;
 
     // 3. Validación estricta en el SERVIDOR
 
@@ -54,7 +62,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // B) Correo electrónico (formato y normalización a minúsculas)
+    // B) Nombres y Apellidos obligatorios y validados
+    const valNombres = validarNombreOApellido(nombres as string, 'Nombres');
+    if (!valNombres.valido) {
+      return NextResponse.json({ error: valNombres.error }, { status: 400 });
+    }
+    const valApellidos = validarNombreOApellido(apellidos as string, 'Apellidos');
+    if (!valApellidos.valido) {
+      return NextResponse.json({ error: valApellidos.error }, { status: 400 });
+    }
+
+    // Normalización: primera letra de cada palabra en mayúscula y el resto en minúscula
+    const nombresNormalizados = normalizarNombrePropio(valNombres.limpio);
+    const apellidosNormalizados = normalizarNombrePropio(valApellidos.limpio);
+
+    // C) Correo electrónico (formato y normalización a minúsculas)
     if (!correo || typeof correo !== 'string') {
       return NextResponse.json(
         { error: 'El correo electrónico es obligatorio.' },
@@ -81,7 +103,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // C) Tipo de identificación
+    // D) Tipo de identificación
     if (tipo_id !== 'alumno_pucp' && tipo_id !== 'externo') {
       return NextResponse.json(
         { error: 'Selecciona si eres alumno PUCP o asistente externo.' },
@@ -89,7 +111,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // D) Documento / Código
+    // E) Documento / Código
     if (!documento || typeof documento !== 'string') {
       return NextResponse.json(
         { error: 'El código de alumno o documento de identidad es obligatorio.' },
@@ -108,6 +130,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Asegurar que las columnas nuevas 'nombres' y 'apellidos' existan en la BD
+    await ensureMigrations();
 
     // 4. Verificar qué ponencia está ABIERTA en este momento en la Base de Datos
     let ponenciaRes;
@@ -145,11 +170,19 @@ export async function POST(req: NextRequest) {
     try {
       const insertRes = await query<{ id: number; registrado_en: Date }>(
         `
-        INSERT INTO asistencias (correo, tipo_id, documento, ponencia_id, ip_hash)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO asistencias (nombres, apellidos, correo, tipo_id, documento, ponencia_id, ip_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id, registrado_en;
         `,
-        [correoNormalizado, tipo_id, docLimpio, ponenciaAbierta.id, ipHash]
+        [
+          nombresNormalizados,
+          apellidosNormalizados,
+          correoNormalizado,
+          tipo_id,
+          docLimpio,
+          ponenciaAbierta.id,
+          ipHash,
+        ]
       );
 
       const fila = insertRes.rows[0];
@@ -160,6 +193,9 @@ export async function POST(req: NextRequest) {
         mensaje: `¡Asistencia registrada para ${ponenciaAbierta.nombre}!`,
         ponenciaNombre: ponenciaAbierta.nombre,
         ponenciaOrden: ponenciaAbierta.orden,
+        nombres: nombresNormalizados,
+        apellidos: apellidosNormalizados,
+        nombreCompleto: `${nombresNormalizados} ${apellidosNormalizados}`,
         correo: correoNormalizado,
         registradoEn: fechaHoraFormateada,
       });

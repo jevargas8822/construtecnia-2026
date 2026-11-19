@@ -1,4 +1,4 @@
-import { query, ensureDatabaseInitialized } from '@/lib/db';
+import { query, ensureDatabaseInitialized, ensureMigrations } from '@/lib/db';
 import { EVENT_CONFIG } from '@/config';
 
 let lastSyncTime = 0;
@@ -40,6 +40,9 @@ export async function syncPonenciasSiEsNecesario(force = false): Promise<void> {
 }
 
 export async function ejecutarSincronizacionPonencias(): Promise<void> {
+  // Asegurar migraciones automáticas en la base de datos (nombres, apellidos en asistencias)
+  await ensureMigrations();
+
   // 1. Verificar si la tabla 'ponencias' existe y qué columnas tiene
   let hasHorarioCol = false;
   try {

@@ -33,6 +33,18 @@ export const EVENT_CONFIG = {
 
   // Configuración de validación de identificación
   validacion: {
+    nombres: {
+      min: 2,
+      max: 80,
+      regex: /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/,
+      errorMensaje: "Los nombres deben tener entre 2 y 80 caracteres y contener solo letras.",
+    },
+    apellidos: {
+      min: 2,
+      max: 80,
+      regex: /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/,
+      errorMensaje: "Los apellidos deben tener entre 2 y 80 caracteres y contener solo letras.",
+    },
     alumnoPucp: {
       regex: /^[0-9]{8}$/,
       longitud: 8,
